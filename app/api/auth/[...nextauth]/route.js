@@ -9,6 +9,9 @@ const handler = NextAuth({
       authorization: {
         params: {
           scope: "openid email profile https://www.googleapis.com/auth/calendar.readonly",
+          access_type: "offline",
+          // Force user to re-consent (ensures we actually get a refresh token)
+          prompt: "consent",
         },
       },
     }),
