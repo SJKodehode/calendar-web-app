@@ -75,7 +75,7 @@ export default function CalendarDisplay () {
                 minute: '2-digit',
                 hour12: false,
             }}
-            timeZone="Europe/Oslo"
+            
             />
 
         </div>
