@@ -20,19 +20,38 @@ export default function CalendarDisplay () {
 
     useEffect(() => {
         async function fetchData() {
-            const { data } = await supabase.from("events").select("*");
-            if (data) {
-                const transformed = data.map((evt) => ({
-                    title: evt.title,
-                    date: evt.date,
-                    description: evt.description,
-                    url: evt.url,
-                }));
-                setCalendarEvents(transformed);
-            }
+          const { data, error } = await supabase
+            .from("events")
+            .select("*"); // or specify columns explicitly
+      
+          if (error) {
+            console.error("Error fetching events:", error);
+            return;
+          }
+      
+          if (data) {
+            const transformed = data.map((evt) => {
+              // If date_start is present, use it; otherwise fall back to date
+              const start = evt.date_start || evt.date;
+              const end = evt.date_end || evt.date; 
+              // If you only have "date" and no "date_end," set both start & end to the same date
+      
+              return {
+                title: evt.title,
+                start: start,
+                end: end,
+                description: evt.description,
+                // ...any other fields FullCalendar might need
+              };
+            });
+      
+            setCalendarEvents(transformed);
+          }
         }
+      
         fetchData();
-    }, []);
+      }, []);
+      
 
     return (
         <div style={{ padding: "2rem"}}>
