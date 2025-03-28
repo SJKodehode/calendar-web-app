@@ -1,23 +1,22 @@
+// app/api/fetchCalendarEvents/route.js
 import { google } from "googleapis";
 import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
-  const { accessToken, refreshToken } = req.body;
-
-  if (!accessToken || !refreshToken) {
-    return res.status(400).json({ error: "Missing tokens" });
-  }
-
+export async function POST(request) {
   try {
+    // In the App Router, you parse JSON from the request like this:
+    const { accessToken, refreshToken } = await request.json();
+
+    if (!accessToken || !refreshToken) {
+      return NextResponse.json({ error: "Missing tokens" }, { status: 400 });
+    }
+
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -47,16 +46,16 @@ export default async function handler(req, res) {
       date_end: evt.end?.dateTime || evt.end?.date,
     }));
 
-    // Upsert the events into Supabase, using google_id as the conflict key.
+    // Upsert into Supabase
     const { error } = await supabase
       .from("events")
       .upsert(supabaseEvents, { onConflict: "google_id" });
 
     if (error) throw error;
 
-    res.status(200).json({ message: "Events synced successfully." });
-  } catch (error) {
-    console.error("Sync error:", error);
-    res.status(500).json({ error: "Failed to sync events." });
+    return NextResponse.json({ message: "Events synced successfully." });
+  } catch (err) {
+    console.error("Sync error:", err);
+    return NextResponse.json({ error: "Failed to sync events." }, { status: 500 });
   }
 }
