@@ -7,7 +7,7 @@ export default function SyncButton() {
   const { data: session } = useSession();
   const [syncStatus, setSyncStatus] = useState("");
 
-  // Function to sync calendar events
+  // Sync your own calendar events
   const handleSyncEvents = async () => {
     const accessToken = session?.accessToken;
     const refreshToken = session?.refreshToken;
@@ -25,17 +25,46 @@ export default function SyncButton() {
       });
 
       if (response.ok) {
-        setSyncStatus("Events synced successfully!");
+        setSyncStatus("My calendar events synced successfully!");
       } else {
-        setSyncStatus("Failed to sync events.");
+        setSyncStatus("Failed to sync my calendar events.");
       }
     } catch (error) {
       console.error("Error syncing events:", error);
-      setSyncStatus("Error syncing events.");
+      setSyncStatus("Error syncing my calendar events.");
     }
   };
 
-  // If user is NOT signed in, show "Sign in with Google" button
+  // Sync events from a shared calendar and add them to your own calendar
+  const handleSyncSharedEvents = async () => {
+    const accessToken = session?.accessToken;
+    const refreshToken = session?.refreshToken;
+    // Add your shared calendar ID here:
+    const sharedCalendarId = "c_f4382a49b61f3edc345ce57c6eb4e95fe90f943b33bf92adafcd9fc561fae4fe@group.calendar.google.com";
+
+    if (!accessToken || !refreshToken) {
+      setSyncStatus("No tokens found. Are you signed in?");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/syncSharedCalendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken, refreshToken, sharedCalendarId }),
+      });
+
+      if (response.ok) {
+        setSyncStatus("Shared calendar events synced successfully!");
+      } else {
+        setSyncStatus("Failed to sync shared calendar events.");
+      }
+    } catch (error) {
+      console.error("Error syncing shared events:", error);
+      setSyncStatus("Error syncing shared calendar events.");
+    }
+  };
+
   if (!session) {
     return (
       <div>
@@ -45,11 +74,11 @@ export default function SyncButton() {
     );
   }
 
-  // If user IS signed in, show sync button and sign-out
   return (
     <div>
       <h2>Welcome, {session.user.name}!</h2>
-      <button onClick={handleSyncEvents}>Sync Google Calendar Events</button>
+      <button onClick={handleSyncEvents}>Sync My Calendar Events</button>
+      <button onClick={handleSyncSharedEvents}>Sync Shared Calendar Events</button>
       <p>{syncStatus}</p>
       <button onClick={() => signOut()}>Sign out</button>
     </div>
