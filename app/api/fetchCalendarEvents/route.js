@@ -2,13 +2,6 @@
 import { google } from "googleapis";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-
-// Extend dayjs with the UTC and timezone plugins
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -17,7 +10,7 @@ const supabase = createClient(
 
 export async function POST(request) {
   try {
-    // Parse JSON from the request
+    // In the App Router, you parse JSON from the request like this:
     const { accessToken, refreshToken } = await request.json();
 
     if (!accessToken || !refreshToken) {
@@ -45,20 +38,13 @@ export async function POST(request) {
     });
 
     const googleEvents = response.data.items || [];
-    // Convert timestamps to Europe/Oslo before inserting into Supabase
-    const supabaseEvents = googleEvents.map((evt) => {
-      // Choose dateTime for timed events, or date for all-day events
-      const rawStart = evt.start?.dateTime || evt.start?.date;
-      const rawEnd = evt.end?.dateTime || evt.end?.date;
-
-      return {
-        google_id: evt.id,
-        title: evt.summary,
-        description: evt.description,
-        date_start: dayjs(rawStart).tz("Europe/Oslo").format(), // Converted to Europe/Oslo
-        date_end: dayjs(rawEnd).tz("Europe/Oslo").format(),
-      };
-    });
+    const supabaseEvents = googleEvents.map((evt) => ({
+      google_id: evt.id,
+      title: evt.summary,
+      description: evt.description,
+      date_start: evt.start?.dateTime || evt.start?.date,
+      date_end: evt.end?.dateTime || evt.end?.date,
+    }));
 
     // Upsert into Supabase
     const { error } = await supabase
